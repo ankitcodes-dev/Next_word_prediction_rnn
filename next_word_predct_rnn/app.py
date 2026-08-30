@@ -3,6 +3,14 @@ import pickle
 import numpy as np
 from keras.models import load_model
 from keras.preprocessing.sequence import pad_sequences
+import os
+
+# ------------------------------------------------------------------------------
+# 🚨 Pre-Initialization (Prevents Cloud NameErrors)
+# ------------------------------------------------------------------------------
+model = None
+tokenizer = None
+max_len = 20  # Default fallback length if file read fails
 
 # ------------------------------------------------------------------------------
 # 💻 Page Configurations & Visual Theme
@@ -74,9 +82,6 @@ st.markdown("""
 # ------------------------------------------------------------------------------
 @st.cache_resource
 def load_resources():
-    import os
-    
-    # Smart path mapping for Streamlit Cloud subfolders
     base_path = "next_word_predct_rnn" if os.path.exists("next_word_predct_rnn") else ""
     
     model_path = os.path.join(base_path, "lstm_model_rnn_new.h5")
@@ -84,32 +89,32 @@ def load_resources():
     max_len_path = os.path.join(base_path, "max_len_rnn.pkl")
     
     try:
-        model = load_model(model_path)
+        loaded_model = load_model(model_path)
         with open(tokenizer_path, "rb") as f:
-            tokenizer = pickle.load(f)
+            loaded_tokenizer = pickle.load(f)
         with open(max_len_path, "rb") as f:
-            max_len = pickle.load(f)
-        return model, tokenizer, max_len
+            loaded_max_len = pickle.load(f)
+        return loaded_model, loaded_tokenizer, loaded_max_len
     except Exception as e:
         st.error(f"⚠️ Error loading model resources: {e}")
-        return None, None, None
+        return None, None, 20
 
+# Safely unpack variables globally
+model, tokenizer, max_len = load_resources()
 
 # ------------------------------------------------------------------------------
 # 🧠 Core Prediction Logic
 # ------------------------------------------------------------------------------
 def predict_next_word(text):
-    # Explicitly reference global variables to prevent NameError flags
-    global model, tokenizer, max_len
-    
-    # Safety gate in case resource mapping fails
     if model is None or tokenizer is None:
-        return "⚠️ Model Initialization Failed"
+        return "⚠️ Model Connection Missing"
         
     try:
+        # Tokenize text context array safely
         sequence = tokenizer.texts_to_sequences([text])[0]
-        sequence = pad_sequences([sequence], maxlen=max_len-1, padding='pre')
+        sequence = pad_sequences([sequence], maxlen=int(max_len)-1, padding='pre')
 
+        # Predict output array matrix
         preds = model.predict(sequence, verbose=0)
         predicted_index = np.argmax(preds)
 
@@ -119,7 +124,6 @@ def predict_next_word(text):
         return "💡 [No word match]"
     except Exception as e:
         return f"Prediction Error: {str(e)}"
-
 
 # ------------------------------------------------------------------------------
 # 🎨 User Interface (UI)
@@ -151,7 +155,6 @@ with st.container():
     # Interactive trigger buttons block using layout columns
     btn_col1, btn_col2, btn_col3 = st.columns([1, 2, 1])
     with btn_col2:
-        # Full width primary visual call-to-action button
         predict_clicked = st.button("🚀 Analyze & Predict Sequence", use_container_width=True)
 
     # Processing and Display Logic execution block
