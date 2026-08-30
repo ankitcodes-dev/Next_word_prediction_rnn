@@ -70,22 +70,30 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ------------------------------------------------------------------------------
-# 📦 Optimized Resource Loading
+# 📦 Optimized Resource Loading (With Cloud Path Support)
 # ------------------------------------------------------------------------------
 @st.cache_resource
 def load_resources():
+    import os
+    
+    # Smart path mapping for Streamlit Cloud subfolders
+    base_path = "next_word_predct_rnn" if os.path.exists("next_word_predct_rnn") else ""
+    
+    model_path = os.path.join(base_path, "lstm_model_rnn_new.h5")
+    tokenizer_path = os.path.join(base_path, "tokenizer_rnn.pkl")
+    max_len_path = os.path.join(base_path, "max_len_rnn.pkl")
+    
     try:
-        model = load_model("lstm_model_rnn_new.h5")
-        with open("tokenizer_rnn.pkl", "rb") as f:
+        model = load_model(model_path)
+        with open(tokenizer_path, "rb") as f:
             tokenizer = pickle.load(f)
-        with open("max_len_rnn.pkl", "rb") as f:
+        with open(max_len_path, "rb") as f:
             max_len = pickle.load(f)
         return model, tokenizer, max_len
     except Exception as e:
         st.error(f"⚠️ Error loading model resources: {e}")
         return None, None, None
 
-model, tokenizer, max_len = load_resources()
 
 # ------------------------------------------------------------------------------
 # 🧠 Core Prediction Logic
