@@ -99,19 +99,27 @@ def load_resources():
 # 🧠 Core Prediction Logic
 # ------------------------------------------------------------------------------
 def predict_next_word(text):
-    if not model or not tokenizer:
-        return "Model Error"
+    # Explicitly reference global variables to prevent NameError flags
+    global model, tokenizer, max_len
+    
+    # Safety gate in case resource mapping fails
+    if model is None or tokenizer is None:
+        return "⚠️ Model Initialization Failed"
         
-    sequence = tokenizer.texts_to_sequences([text])[0]
-    sequence = pad_sequences([sequence], maxlen=max_len-1, padding='pre')
+    try:
+        sequence = tokenizer.texts_to_sequences([text])[0]
+        sequence = pad_sequences([sequence], maxlen=max_len-1, padding='pre')
 
-    preds = model.predict(sequence, verbose=0)
-    predicted_index = np.argmax(preds)
+        preds = model.predict(sequence, verbose=0)
+        predicted_index = np.argmax(preds)
 
-    for word, index in tokenizer.word_index.items():
-        if index == predicted_index:
-            return word
-    return "💡 [No word match]"
+        for word, index in tokenizer.word_index.items():
+            if index == predicted_index:
+                return word
+        return "💡 [No word match]"
+    except Exception as e:
+        return f"Prediction Error: {str(e)}"
+
 
 # ------------------------------------------------------------------------------
 # 🎨 User Interface (UI)
