@@ -1,0 +1,6 @@
+streamlit
+tensorflow>=2.16.0
+keras
+numpy
+h5py
+
